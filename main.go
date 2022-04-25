@@ -19,14 +19,15 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/releaseutil"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
+
+	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/releaseutil"
 
 	"kubepack.dev/kubepack/pkg/lib"
 	"kubepack.dev/lib-helm/pkg/action"
@@ -44,16 +45,16 @@ var (
 	masterURL      = ""
 	kubeconfigPath = filepath.Join(homedir.HomeDir(), ".kube", "config")
 
-	// url     = "https://charts.appscode.com/stable/"
-	// name    = "kubedb"
-	// version = "v0.13.0-rc.0"
+	url     = "https://charts.appscode.com/stable/"
+	name    = "kube-ui-server"
+	version = "v2022.04.04"
 
-	url     = "https://kubernetes-charts.storage.googleapis.com"
-	name    = "wordpress"
-	version = "8.1.1"
+	// url     = "https://kubernetes-charts.storage.googleapis.com"
+	// name    = "wordpress"
+	// version = "8.1.1"
 
 	skipTests bool
-	showFiles []string
+	showFiles []string = []string{"deployment.yaml"}
 )
 
 func main() {
@@ -104,6 +105,7 @@ func main() {
 			ValuesFile:  "",
 			ValuesPatch: nil,
 		},
+		ClientOnly:   true,
 		DryRun:       true,
 		DisableHooks: false,
 		Replace:      true, // Skip the name check
@@ -234,7 +236,7 @@ func writeToFile(outputDir string, name string, data string, append bool) error 
 
 func createOrOpenFile(filename string, append bool) (*os.File, error) {
 	if append {
-		return os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0600)
+		return os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0o600)
 	}
 	return os.Create(filename)
 }
@@ -246,5 +248,5 @@ func ensureDirectoryForFile(file string) error {
 		return err
 	}
 
-	return os.MkdirAll(baseDir, 0755)
+	return os.MkdirAll(baseDir, 0o755)
 }
