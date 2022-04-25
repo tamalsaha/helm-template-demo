@@ -3,11 +3,11 @@ module github.com/tamalsaha/helm-template-demo
 go 1.18
 
 require (
+	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
 	helm.sh/helm/v3 v3.6.1
 	k8s.io/client-go v0.21.1
 	k8s.io/klog/v2 v2.9.0
-	kmodules.xyz/client-go v0.0.0-20220404224906-af7b092cfac5
 	kubepack.dev/kubepack v0.3.9-0.20220425225403-4b1ca29cd318
 	kubepack.dev/lib-helm v0.3.2-0.20220425222012-4279003342a5
 )
@@ -116,7 +116,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.0.3 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.11.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -175,6 +174,7 @@ require (
 	k8s.io/kubectl v0.21.1 // indirect
 	k8s.io/utils v0.0.0-20210802155522-efc7438f0176 // indirect
 	kmodules.xyz/apply v0.0.0-20210503080849-eb226c295465 // indirect
+	kmodules.xyz/client-go v0.0.0-20220404224906-af7b092cfac5 // indirect
 	kmodules.xyz/resource-metadata v0.10.16-0.20220419233724-fbd1b7e25b05 // indirect
 	kubepack.dev/preset v0.0.0-20220318014008-5b564b7dc9e7 // indirect
 	sigs.k8s.io/application v0.8.2-0.20200306235134-f10d9ca8abd4 // indirect

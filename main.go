@@ -19,6 +19,14 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"log"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 	ha "helm.sh/helm/v3/pkg/action"
@@ -31,13 +39,6 @@ import (
 	"kubepack.dev/kubepack/pkg/lib"
 	"kubepack.dev/lib-helm/pkg/action"
 	"kubepack.dev/lib-helm/pkg/values"
-	"log"
-	"os"
-	"path"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
 )
 
 var (
@@ -67,7 +68,6 @@ func warning(format string, v ...interface{}) {
 }
 
 func m2(opts *action.InstallOptions) (*release.Release, error) {
-
 	cfg := new(ha.Configuration)
 	// TODO: Use secret driver for which namespace?
 	err := cfg.Init(nil, opts.Namespace, "secret", debug)
@@ -97,23 +97,23 @@ func m2(opts *action.InstallOptions) (*release.Release, error) {
 	client.CreateNamespace = opts.CreateNamespace
 
 	// Check chart dependencies to make sure all are present in /charts
-	chartRequested, err := lib.DefaultRegistry.GetChart(opts.ChartURL, opts.ChartName, opts.Version)
+	chrt, err := lib.DefaultRegistry.GetChart(opts.ChartURL, opts.ChartName, opts.Version)
 	if err != nil {
 		return nil, err
 	}
-	if err := checkIfInstallable(chartRequested.Chart); err != nil {
+	if err := checkIfInstallable(chrt.Chart); err != nil {
 		return nil, err
 	}
 
-	if chartRequested.Metadata.Deprecated {
+	if chrt.Metadata.Deprecated {
 		warning("This chart is deprecated")
 	}
 
-	if req := chartRequested.Metadata.Dependencies; req != nil {
+	if req := chrt.Metadata.Dependencies; req != nil {
 		// If CheckDependencies returns an error, we have unfulfilled dependencies.
 		// As of Helm 2.4.0, this is treated as a stopping condition:
 		// https://github.com/helm/helm/issues/2209
-		if err := ha.CheckDependencies(chartRequested.Chart, req); err != nil {
+		if err := ha.CheckDependencies(chrt.Chart, req); err != nil {
 			err = errors.Wrap(err, "An error occurred while checking for chart dependencies. You may need to run `helm dependency build` to fetch missing dependencies")
 			if err != nil {
 				return nil, err
@@ -123,7 +123,14 @@ func m2(opts *action.InstallOptions) (*release.Release, error) {
 
 	client.Namespace = opts.Namespace
 
-	return client.Run(chartRequested.Chart, map[string]interface{}{})
+	vals, err := opts.Values.MergeValues(chrt.Chart)
+	if err != nil {
+		return nil, err
+	}
+	// chartutil.CoalesceValues(chrt, chrtVals) will use vals to render templates
+	chrt.Chart.Values = map[string]interface{}{}
+
+	return client.Run(chrt.Chart, vals)
 }
 
 func main() {
