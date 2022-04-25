@@ -23,40 +23,43 @@ import (
 )
 
 const (
-	ResourceKindResourceGraph = "ResourceGraph"
-	ResourceResourceGraph     = "resourcegraph"
-	ResourceResourceGraphs    = "resourcegraphs"
+	ResourceKindRenderDashboard = "RenderDashboard"
+	ResourceRenderDashboard     = "renderdashboard"
+	ResourceRenderDashboards    = "renderdashboards"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type ResourceGraph struct {
+type RenderDashboard struct {
 	metav1.TypeMeta `json:",inline"`
 	// Request describes the attributes for the graph request.
 	// +optional
-	Request *ResourceGraphRequest `json:"request,omitempty"`
+	Request *RenderDashboardRequest `json:"request,omitempty"`
 	// Response describes the attributes for the graph response.
 	// +optional
-	Response *ResourceGraphResponse `json:"response,omitempty"`
+	Response *RenderDashboardResponse `json:"response,omitempty"`
 }
 
-type ResourceGraphRequest struct {
-	Source kmapi.ObjectInfo `json:"source"`
+type RenderDashboardRequest struct {
+	Resource kmapi.ResourceID      `json:"resource"`
+	Ref      kmapi.ObjectReference `json:"ref"`
+	// +optional
+	Name string `json:"name,omitempty"`
 }
 
-type ResourceGraphResponse struct {
-	Resources   []kmapi.ResourceID `json:"resources"`
-	Connections []ObjectConnection `json:"connections"`
+type RenderDashboardResponse struct {
+	Dashboards []DashboardResponse `json:"dashboards"`
 }
 
-type ObjectConnection struct {
-	Source ObjectPointer `json:"source"`
-	Target ObjectPointer `json:"target"`
-	Labels []string      `json:"labels"`
+type DashboardResponse struct {
+	Title string `json:"title"`
+	// +optional
+	URL string `json:"url,omitempty"`
+	// +optional
+	Panels []PanelLinkResponse `json:"panels,omitempty"`
 }
 
-type ObjectPointer struct {
-	ResourceID int    `json:"resourceID"`
-	Namespace  string `json:"namespace"`
-	Name       string `json:"name"`
+type PanelLinkResponse struct {
+	Title string `json:"title"`
+	URL   string `json:"url"`
 }

@@ -735,7 +735,6 @@ gomodules.xyz/sets
 # gomodules.xyz/x v0.0.13
 ## explicit; go 1.17
 gomodules.xyz/x/ioutil
-gomodules.xyz/x/strings
 # google.golang.org/api v0.44.0 => google.golang.org/api v0.20.0
 ## explicit; go 1.11
 google.golang.org/api/googleapi
@@ -1232,9 +1231,6 @@ k8s.io/utils/exec
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# kmodules.xyz/apiversion v0.2.0
-## explicit; go 1.14
-kmodules.xyz/apiversion
 # kmodules.xyz/apply v0.0.0-20210503080849-eb226c295465
 ## explicit; go 1.15
 kmodules.xyz/apply
@@ -1249,15 +1245,13 @@ kmodules.xyz/client-go/meta
 kmodules.xyz/client-go/tools/clientcmd
 kmodules.xyz/client-go/tools/parser
 kmodules.xyz/client-go/tools/wait
-# kmodules.xyz/resource-metadata v0.10.5
+# kmodules.xyz/resource-metadata v0.10.16-0.20220419233724-fbd1b7e25b05
 ## explicit; go 1.17
 kmodules.xyz/resource-metadata/apis/meta
 kmodules.xyz/resource-metadata/apis/meta/v1alpha1
 kmodules.xyz/resource-metadata/crds
-kmodules.xyz/resource-metadata/hub
-kmodules.xyz/resource-metadata/hub/resourcedescriptors
 kmodules.xyz/resource-metadata/hub/resourceeditors
-# kubepack.dev/kubepack v0.3.8
+# kubepack.dev/kubepack v0.3.9-0.20220425225403-4b1ca29cd318
 ## explicit; go 1.17
 kubepack.dev/kubepack/apis
 kubepack.dev/kubepack/apis/kubepack
@@ -1282,7 +1276,7 @@ kubepack.dev/lib-helm/pkg/kube
 kubepack.dev/lib-helm/pkg/repo
 kubepack.dev/lib-helm/pkg/storage/driver
 kubepack.dev/lib-helm/pkg/values
-# kubepack.dev/preset v0.0.0-20220207074019-090909e7fcff
+# kubepack.dev/preset v0.0.0-20220318014008-5b564b7dc9e7
 ## explicit; go 1.17
 kubepack.dev/preset/apis/charts/v1alpha1
 kubepack.dev/preset/apis/store/v1alpha1

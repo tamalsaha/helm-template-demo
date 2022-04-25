@@ -8,7 +8,7 @@ require (
 	k8s.io/client-go v0.21.1
 	k8s.io/klog/v2 v2.9.0
 	kmodules.xyz/client-go v0.0.0-20220404224906-af7b092cfac5
-	kubepack.dev/kubepack v0.3.8
+	kubepack.dev/kubepack v0.3.9-0.20220425225403-4b1ca29cd318
 	kubepack.dev/lib-helm v0.3.2-0.20220425222012-4279003342a5
 )
 
@@ -174,10 +174,9 @@ require (
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
 	k8s.io/kubectl v0.21.1 // indirect
 	k8s.io/utils v0.0.0-20210802155522-efc7438f0176 // indirect
-	kmodules.xyz/apiversion v0.2.0 // indirect
 	kmodules.xyz/apply v0.0.0-20210503080849-eb226c295465 // indirect
-	kmodules.xyz/resource-metadata v0.10.5 // indirect
-	kubepack.dev/preset v0.0.0-20220207074019-090909e7fcff // indirect
+	kmodules.xyz/resource-metadata v0.10.16-0.20220419233724-fbd1b7e25b05 // indirect
+	kubepack.dev/preset v0.0.0-20220318014008-5b564b7dc9e7 // indirect
 	sigs.k8s.io/application v0.8.2-0.20200306235134-f10d9ca8abd4 // indirect
 	sigs.k8s.io/cli-utils v0.26.1 // indirect
 	sigs.k8s.io/controller-runtime v0.9.0 // indirect
