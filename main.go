@@ -19,26 +19,25 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
+	flag "github.com/spf13/pflag"
+	ha "helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/release"
+	"helm.sh/helm/v3/pkg/releaseutil"
+	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog/v2"
+	"kubepack.dev/kubepack/pkg/lib"
+	"kubepack.dev/lib-helm/pkg/action"
+	"kubepack.dev/lib-helm/pkg/values"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-
-	"helm.sh/helm/v3/pkg/release"
-	"helm.sh/helm/v3/pkg/releaseutil"
-
-	"kubepack.dev/kubepack/pkg/lib"
-	"kubepack.dev/lib-helm/pkg/action"
-	"kubepack.dev/lib-helm/pkg/values"
-
-	flag "github.com/spf13/pflag"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/util/homedir"
-	"k8s.io/klog/v2"
-	clientcmdutil "kmodules.xyz/client-go/tools/clientcmd"
 )
 
 var (
@@ -54,8 +53,78 @@ var (
 	// version = "8.1.1"
 
 	skipTests bool
-	showFiles []string = []string{"deployment.yaml"}
+	showFiles []string = []string{"templates/deployment.yaml"}
 )
+
+func debug(format string, v ...interface{}) {
+	format = fmt.Sprintf("[debug] %s\n", format)
+	_ = log.Output(2, fmt.Sprintf(format, v...))
+}
+
+func warning(format string, v ...interface{}) {
+	format = fmt.Sprintf("WARNING: %s\n", format)
+	fmt.Fprintf(os.Stderr, format, v...)
+}
+
+func m2(opts *action.InstallOptions) (*release.Release, error) {
+
+	cfg := new(ha.Configuration)
+	// TODO: Use secret driver for which namespace?
+	err := cfg.Init(nil, opts.Namespace, "secret", debug)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Capabilities = chartutil.DefaultCapabilities
+
+	client := ha.NewInstall(cfg)
+	var extraAPIs []string
+	client.DryRun = opts.DryRun
+	client.ReleaseName = opts.ReleaseName
+	client.Namespace = opts.Namespace
+	client.Replace = opts.Replace // Skip the name check
+	client.ClientOnly = opts.ClientOnly
+	client.APIVersions = chartutil.VersionSet(extraAPIs)
+	client.Version = opts.Version
+	client.DisableHooks = opts.DisableHooks
+	client.Wait = opts.Wait
+	client.Timeout = opts.Timeout
+	client.Description = opts.Description
+	client.Atomic = opts.Atomic
+	client.SkipCRDs = opts.SkipCRDs
+	client.SubNotes = opts.SubNotes
+	client.DisableOpenAPIValidation = opts.DisableOpenAPIValidation
+	client.IncludeCRDs = opts.IncludeCRDs
+	client.CreateNamespace = opts.CreateNamespace
+
+	// Check chart dependencies to make sure all are present in /charts
+	chartRequested, err := lib.DefaultRegistry.GetChart(opts.ChartURL, opts.ChartName, opts.Version)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkIfInstallable(chartRequested.Chart); err != nil {
+		return nil, err
+	}
+
+	if chartRequested.Metadata.Deprecated {
+		warning("This chart is deprecated")
+	}
+
+	if req := chartRequested.Metadata.Dependencies; req != nil {
+		// If CheckDependencies returns an error, we have unfulfilled dependencies.
+		// As of Helm 2.4.0, this is treated as a stopping condition:
+		// https://github.com/helm/helm/issues/2209
+		if err := ha.CheckDependencies(chartRequested.Chart, req); err != nil {
+			err = errors.Wrap(err, "An error occurred while checking for chart dependencies. You may need to run `helm dependency build` to fetch missing dependencies")
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	client.Namespace = opts.Namespace
+
+	return client.Run(chartRequested.Chart, map[string]interface{}{})
+}
 
 func main() {
 	flag.StringVar(&masterURL, "master", masterURL, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
@@ -65,20 +134,21 @@ func main() {
 	flag.StringVar(&version, "version", version, "Version of bundle")
 	flag.Parse()
 
-	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
-		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterURL}})
-	kubeconfig, err := cc.RawConfig()
-	if err != nil {
-		klog.Fatal(err)
-	}
-	getter := clientcmdutil.NewClientGetter(&kubeconfig)
+	//cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+	//	&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
+	//	&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterURL}})
+	//kubeconfig, err := cc.RawConfig()
+	//if err != nil {
+	//	klog.Fatal(err)
+	//}
+	//getter := clientcmdutil.NewClientGetter(&kubeconfig)
+	//fmt.Println(getter)
 
-	namespace := "default"
-	i, err := action.NewInstaller(getter, namespace, "secret")
-	if err != nil {
-		klog.Fatal(err)
-	}
+	//namespace := "default"
+	//i, err := action.NewInstaller(nil, namespace, "secret")
+	//if err != nil {
+	//	klog.Fatal(err)
+	//}
 
 	/*
 		if kubeVersion != "" {
@@ -97,7 +167,37 @@ func main() {
 		client.IncludeCRDs = includeCrds
 
 	*/
-	opts := action.InstallOptions{
+	//opts := action.InstallOptions{
+	//	ChartURL:  url,
+	//	ChartName: name,
+	//	Version:   version,
+	//	Values: values.Options{
+	//		ValuesFile:  "",
+	//		ValuesPatch: nil,
+	//	},
+	//	ClientOnly:   true,
+	//	DryRun:       true,
+	//	DisableHooks: false,
+	//	Replace:      true, // Skip the name check
+	//	Wait:         false,
+	//	Devel:        false,
+	//	Timeout:      0,
+	//	Namespace:    namespace,
+	//	ReleaseName:  "release-name",
+	//	Atomic:       false,
+	//	IncludeCRDs:  false, //
+	//	SkipCRDs:     false, //
+	//}
+	//i.WithRegistry(lib.DefaultRegistry).
+	//	WithOptions(opts)
+	//rel, _, err := i.Run()
+	//if err != nil {
+	//	klog.Fatal(err)
+	//}
+	//fmt.Println(rel)
+
+	namespace := "default"
+	opts := &action.InstallOptions{
 		ChartURL:  url,
 		ChartName: name,
 		Version:   version,
@@ -118,13 +218,11 @@ func main() {
 		IncludeCRDs:  false, //
 		SkipCRDs:     false, //
 	}
-	i.WithRegistry(lib.DefaultRegistry).
-		WithOptions(opts)
-	rel, _, err := i.Run()
+
+	rel, err := m2(opts)
 	if err != nil {
 		klog.Fatal(err)
 	}
-	fmt.Println(rel)
 
 	out := os.Stdout
 	// We ignore a potential error here because, when the --debug flag was specified,
@@ -193,6 +291,17 @@ func main() {
 			fmt.Fprintf(out, "%s", manifests.String())
 		}
 	}
+}
+
+// checkIfInstallable validates if a chart can be installed
+//
+// Application chart type is only installable
+func checkIfInstallable(ch *chart.Chart) error {
+	switch ch.Metadata.Type {
+	case "", "application":
+		return nil
+	}
+	return errors.Errorf("%s charts are not installable", ch.Metadata.Type)
 }
 
 func isTestHook(h *release.Hook) bool {
