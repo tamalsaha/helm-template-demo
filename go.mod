@@ -7,7 +7,7 @@ require (
 	helm.sh/helm/v3 v3.6.1
 	k8s.io/client-go v0.21.1
 	k8s.io/klog/v2 v2.9.0
-	kmodules.xyz/client-go v0.0.0-20220308080632-2543b61b64fd
+	kmodules.xyz/client-go v0.0.0-20220404224906-af7b092cfac5
 	kubepack.dev/kubepack v0.3.8
 	kubepack.dev/lib-helm v0.3.2-0.20220425222012-4279003342a5
 )
