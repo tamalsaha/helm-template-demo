@@ -1055,6 +1055,8 @@ gomodules.xyz/blobfs v0.1.10/go.mod h1:qnkPrdU712+OIx7dFmmKTk84ak57aEWiVxpYsIPX/
 gomodules.xyz/jsonpatch/v2 v2.1.0/go.mod h1:IhYNNY4jnS53ZnfE4PAmpKtDpTCj1JFXc+3mwe7XcUU=
 gomodules.xyz/jsonpatch/v2 v2.2.0 h1:4pT439QV83L+G9FkcCriY6EkpcK6r6bK+A5FBUMI7qY=
 gomodules.xyz/jsonpatch/v2 v2.2.0/go.mod h1:WXp+iVDkoLQqPudfQ9GBlwB2eZ5DKOnjQZCYdOS8GPY=
+gomodules.xyz/password-generator v0.2.7 h1:xUCiIKji8JYOkyTsvi/2nArbVevsHMOnoJVMaShbzqI=
+gomodules.xyz/password-generator v0.2.7/go.mod h1:TvwYYTx9+P1pPwKQKfZgB/wr2Id9MqAQ3B5auY7reNg=
 gomodules.xyz/pointer v0.1.0 h1:sG2UKrYVSo6E3r4itAjXfPfe4fuXMi0KdyTHpR3vGCg=
 gomodules.xyz/sets v0.2.1 h1:vK3oUWoGVrZKLDKO/bzEo/ucHFdCE7+DxWPeWxK72KQ=
 gomodules.xyz/sets v0.2.1/go.mod h1:jKgNp01/iDs+svOWXaPk5cKP3VXy0mWUoTF/ore+aMc=

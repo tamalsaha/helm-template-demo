@@ -729,11 +729,15 @@ gomodules.xyz/blobfs/testing
 # gomodules.xyz/jsonpatch/v2 v2.2.0
 ## explicit; go 1.12
 gomodules.xyz/jsonpatch/v2
+# gomodules.xyz/password-generator v0.2.7
+## explicit; go 1.15
+gomodules.xyz/password-generator
 # gomodules.xyz/sets v0.2.1
 ## explicit; go 1.14
 gomodules.xyz/sets
 # gomodules.xyz/x v0.0.13
 ## explicit; go 1.17
+gomodules.xyz/x/crypto/rand
 gomodules.xyz/x/ioutil
 gomodules.xyz/x/strings
 # google.golang.org/api v0.44.0 => google.golang.org/api v0.20.0
@@ -1159,7 +1163,12 @@ k8s.io/client-go/pkg/apis/clientauthentication
 k8s.io/client-go/pkg/apis/clientauthentication/v1alpha1
 k8s.io/client-go/pkg/apis/clientauthentication/v1beta1
 k8s.io/client-go/pkg/version
+k8s.io/client-go/plugin/pkg/client/auth
+k8s.io/client-go/plugin/pkg/client/auth/azure
 k8s.io/client-go/plugin/pkg/client/auth/exec
+k8s.io/client-go/plugin/pkg/client/auth/gcp
+k8s.io/client-go/plugin/pkg/client/auth/oidc
+k8s.io/client-go/plugin/pkg/client/auth/openstack
 k8s.io/client-go/rest
 k8s.io/client-go/rest/watch
 k8s.io/client-go/restmapper
@@ -1241,6 +1250,7 @@ kmodules.xyz/client-go/apiextensions
 kmodules.xyz/client-go/apiextensions/v1
 kmodules.xyz/client-go/discovery
 kmodules.xyz/client-go/meta
+kmodules.xyz/client-go/tools/clientcmd
 kmodules.xyz/client-go/tools/parser
 kmodules.xyz/client-go/tools/wait
 # kmodules.xyz/resource-metadata v0.10.0
