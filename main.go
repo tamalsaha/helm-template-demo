@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -34,7 +33,6 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
-	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
 	"kubepack.dev/kubepack/pkg/lib"
 	"kubepack.dev/lib-helm/pkg/action"
@@ -42,9 +40,6 @@ import (
 )
 
 var (
-	masterURL      = ""
-	kubeconfigPath = filepath.Join(homedir.HomeDir(), ".kube", "config")
-
 	url     = "https://charts.appscode.com/stable/"
 	name    = "kube-ui-server"
 	version = "v2022.04.04"
@@ -134,74 +129,10 @@ func m2(opts *action.InstallOptions) (*release.Release, error) {
 }
 
 func main() {
-	flag.StringVar(&masterURL, "master", masterURL, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
-	flag.StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
 	flag.StringVar(&url, "url", url, "Chart repo url")
 	flag.StringVar(&name, "name", name, "Name of bundle")
 	flag.StringVar(&version, "version", version, "Version of bundle")
 	flag.Parse()
-
-	//cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-	//	&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
-	//	&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterURL}})
-	//kubeconfig, err := cc.RawConfig()
-	//if err != nil {
-	//	klog.Fatal(err)
-	//}
-	//getter := clientcmdutil.NewClientGetter(&kubeconfig)
-	//fmt.Println(getter)
-
-	//namespace := "default"
-	//i, err := action.NewInstaller(nil, namespace, "secret")
-	//if err != nil {
-	//	klog.Fatal(err)
-	//}
-
-	/*
-		if kubeVersion != "" {
-			parsedKubeVersion, err := chartutil.ParseKubeVersion(kubeVersion)
-			if err != nil {
-				return fmt.Errorf("invalid kube version '%s': %s", kubeVersion, err)
-			}
-			client.KubeVersion = parsedKubeVersion
-		}
-
-		client.DryRun = true
-		client.ReleaseName = "release-name"
-		client.Replace = true // Skip the name check
-		client.ClientOnly = !validate
-		client.APIVersions = chartutil.VersionSet(extraAPIs)
-		client.IncludeCRDs = includeCrds
-
-	*/
-	//opts := action.InstallOptions{
-	//	ChartURL:  url,
-	//	ChartName: name,
-	//	Version:   version,
-	//	Values: values.Options{
-	//		ValuesFile:  "",
-	//		ValuesPatch: nil,
-	//	},
-	//	ClientOnly:   true,
-	//	DryRun:       true,
-	//	DisableHooks: false,
-	//	Replace:      true, // Skip the name check
-	//	Wait:         false,
-	//	Devel:        false,
-	//	Timeout:      0,
-	//	Namespace:    namespace,
-	//	ReleaseName:  "release-name",
-	//	Atomic:       false,
-	//	IncludeCRDs:  false, //
-	//	SkipCRDs:     false, //
-	//}
-	//i.WithRegistry(lib.DefaultRegistry).
-	//	WithOptions(opts)
-	//rel, _, err := i.Run()
-	//if err != nil {
-	//	klog.Fatal(err)
-	//}
-	//fmt.Println(rel)
 
 	namespace := "default"
 	opts := &action.InstallOptions{
@@ -318,51 +249,4 @@ func isTestHook(h *release.Hook) bool {
 		}
 	}
 	return false
-}
-
-// The following functions (writeToFile, createOrOpenFile, and ensureDirectoryForFile)
-// are copied from the actions package. This is part of a change to correct a
-// bug introduced by #8156. As part of the todo to refactor renderResources
-// this duplicate code should be removed. It is added here so that the API
-// surface area is as minimally impacted as possible in fixing the issue.
-func writeToFile(outputDir string, name string, data string, append bool) error {
-	outfileName := strings.Join([]string{outputDir, name}, string(filepath.Separator))
-
-	err := ensureDirectoryForFile(outfileName)
-	if err != nil {
-		return err
-	}
-
-	f, err := createOrOpenFile(outfileName, append)
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	_, err = f.WriteString(fmt.Sprintf("---\n# Source: %s\n%s\n", name, data))
-
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("wrote %s\n", outfileName)
-	return nil
-}
-
-func createOrOpenFile(filename string, append bool) (*os.File, error) {
-	if append {
-		return os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0o600)
-	}
-	return os.Create(filename)
-}
-
-func ensureDirectoryForFile(file string) error {
-	baseDir := path.Dir(file)
-	_, err := os.Stat(baseDir)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	return os.MkdirAll(baseDir, 0o755)
 }
