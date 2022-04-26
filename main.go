@@ -19,6 +19,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"k8s.io/klog/v2"
 	"log"
 	"os"
 	"regexp"
@@ -154,7 +155,13 @@ func main() {
 		SkipCRDs:     true,  //
 	}
 
-	RenderChart(opts)
+	_, files, err := RenderChart(opts)
+	if err != nil {
+		klog.Fatal(err)
+	}
+	for filename := range files {
+		fmt.Println(filename)
+	}
 }
 
 func RenderChart(opts *action.InstallOptions) (string, map[string]string, error) {
@@ -166,26 +173,26 @@ func RenderChart(opts *action.InstallOptions) (string, map[string]string, error)
 	}
 	cfg.Capabilities = chartutil.DefaultCapabilities
 
-	client := ha.NewInstall(cfg)
+	cmd := ha.NewInstall(cfg)
 	var extraAPIs []string
-	client.DryRun = opts.DryRun
-	client.ReleaseName = opts.ReleaseName
-	client.Namespace = opts.Namespace
-	client.Replace = opts.Replace // Skip the name check
-	client.ClientOnly = opts.ClientOnly
-	client.APIVersions = chartutil.VersionSet(extraAPIs)
-	client.Version = opts.Version
-	client.DisableHooks = opts.DisableHooks
-	client.Wait = opts.Wait
-	client.Timeout = opts.Timeout
-	client.Description = opts.Description
-	client.Atomic = opts.Atomic
-	client.SkipCRDs = opts.SkipCRDs
-	client.SubNotes = opts.SubNotes
-	client.DisableOpenAPIValidation = opts.DisableOpenAPIValidation
-	client.IncludeCRDs = opts.IncludeCRDs
-	client.CreateNamespace = opts.CreateNamespace
-	client.Namespace = opts.Namespace
+	cmd.DryRun = opts.DryRun
+	cmd.ReleaseName = opts.ReleaseName
+	cmd.Namespace = opts.Namespace
+	cmd.Replace = opts.Replace // Skip the name check
+	cmd.ClientOnly = opts.ClientOnly
+	cmd.APIVersions = chartutil.VersionSet(extraAPIs)
+	cmd.Version = opts.Version
+	cmd.DisableHooks = opts.DisableHooks
+	cmd.Wait = opts.Wait
+	cmd.Timeout = opts.Timeout
+	cmd.Description = opts.Description
+	cmd.Atomic = opts.Atomic
+	cmd.SkipCRDs = opts.SkipCRDs
+	cmd.SubNotes = opts.SubNotes
+	cmd.DisableOpenAPIValidation = opts.DisableOpenAPIValidation
+	cmd.IncludeCRDs = opts.IncludeCRDs
+	cmd.CreateNamespace = opts.CreateNamespace
+	cmd.Namespace = opts.Namespace
 
 	// Check chart dependencies to make sure all are present in /charts
 	chrt, err := lib.DefaultRegistry.GetChart(opts.ChartURL, opts.ChartName, opts.Version)
@@ -218,7 +225,7 @@ func RenderChart(opts *action.InstallOptions) (string, map[string]string, error)
 	}
 	chrt.Chart.Values = map[string]interface{}{}
 
-	rel, err := client.Run(chrt.Chart, vals)
+	rel, err := cmd.Run(chrt.Chart, vals)
 	if err != nil {
 		return "", nil, err
 	}
