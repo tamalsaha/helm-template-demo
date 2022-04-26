@@ -19,11 +19,12 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"k8s.io/klog/v2"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	"k8s.io/klog/v2"
 
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
@@ -133,7 +134,7 @@ func main() {
 	flag.Parse()
 
 	namespace := "default"
-	opts := &action.InstallOptions{
+	opts := action.InstallOptions{
 		ChartURL:  url,
 		ChartName: name,
 		Version:   version,
@@ -155,7 +156,13 @@ func main() {
 		SkipCRDs:     true,  //
 	}
 
-	_, files, err := RenderChart(opts)
+	i, err := action.NewRenderer()
+	if err != nil {
+		klog.Fatal(err)
+	}
+	_, files, err := i.WithRegistry(lib.DefaultRegistry).
+		WithOptions(opts).
+		Run()
 	if err != nil {
 		klog.Fatal(err)
 	}
