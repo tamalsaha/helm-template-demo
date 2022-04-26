@@ -21,9 +21,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -33,7 +31,6 @@ import (
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/release"
 	"helm.sh/helm/v3/pkg/releaseutil"
-	"k8s.io/klog/v2"
 	"kubepack.dev/kubepack/pkg/lib"
 	"kubepack.dev/lib-helm/pkg/action"
 	"kubepack.dev/lib-helm/pkg/values"
@@ -154,81 +151,112 @@ func main() {
 		ReleaseName:  "release-name",
 		Atomic:       false,
 		IncludeCRDs:  false, //
-		SkipCRDs:     false, //
+		SkipCRDs:     true,  //
 	}
 
-	rel, err := m2(opts)
+	RenderChart(opts)
+}
+
+func RenderChart(opts *action.InstallOptions) (string, map[string]string, error) {
+	cfg := new(ha.Configuration)
+	// TODO: Use secret driver for which namespace?
+	err := cfg.Init(nil, opts.Namespace, "secret", debug)
 	if err != nil {
-		klog.Fatal(err)
+		return "", nil, err
+	}
+	cfg.Capabilities = chartutil.DefaultCapabilities
+
+	client := ha.NewInstall(cfg)
+	var extraAPIs []string
+	client.DryRun = opts.DryRun
+	client.ReleaseName = opts.ReleaseName
+	client.Namespace = opts.Namespace
+	client.Replace = opts.Replace // Skip the name check
+	client.ClientOnly = opts.ClientOnly
+	client.APIVersions = chartutil.VersionSet(extraAPIs)
+	client.Version = opts.Version
+	client.DisableHooks = opts.DisableHooks
+	client.Wait = opts.Wait
+	client.Timeout = opts.Timeout
+	client.Description = opts.Description
+	client.Atomic = opts.Atomic
+	client.SkipCRDs = opts.SkipCRDs
+	client.SubNotes = opts.SubNotes
+	client.DisableOpenAPIValidation = opts.DisableOpenAPIValidation
+	client.IncludeCRDs = opts.IncludeCRDs
+	client.CreateNamespace = opts.CreateNamespace
+	client.Namespace = opts.Namespace
+
+	// Check chart dependencies to make sure all are present in /charts
+	chrt, err := lib.DefaultRegistry.GetChart(opts.ChartURL, opts.ChartName, opts.Version)
+	if err != nil {
+		return "", nil, err
+	}
+	if err := checkIfInstallable(chrt.Chart); err != nil {
+		return "", nil, err
 	}
 
-	out := os.Stdout
-	// We ignore a potential error here because, when the --debug flag was specified,
-	// we always want to print the YAML, even if it is not valid. The error is still returned afterwards.
-	if rel != nil {
-		var manifests bytes.Buffer
-		fmt.Fprintln(&manifests, strings.TrimSpace(rel.Manifest))
-		if !opts.DisableHooks {
-			for _, m := range rel.Hooks {
-				if skipTests && isTestHook(m) {
-					continue
-				}
-				fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", m.Path, m.Manifest)
-			}
-		}
+	if chrt.Metadata.Deprecated {
+		warning("This chart is deprecated")
+	}
 
-		// if we have a list of files to render, then check that each of the
-		// provided files exists in the chart.
-		if len(showFiles) > 0 {
-			// This is necessary to ensure consistent manifest ordering when using --show-only
-			// with globs or directory names.
-			splitManifests := releaseutil.SplitManifests(manifests.String())
-			manifestsKeys := make([]string, 0, len(splitManifests))
-			for k := range splitManifests {
-				manifestsKeys = append(manifestsKeys, k)
+	if req := chrt.Metadata.Dependencies; req != nil {
+		// If CheckDependencies returns an error, we have unfulfilled dependencies.
+		// As of Helm 2.4.0, this is treated as a stopping condition:
+		// https://github.com/helm/helm/issues/2209
+		if err := ha.CheckDependencies(chrt.Chart, req); err != nil {
+			err = errors.Wrap(err, "An error occurred while checking for chart dependencies. You may need to run `helm dependency build` to fetch missing dependencies")
+			if err != nil {
+				return "", nil, err
 			}
-			sort.Sort(releaseutil.BySplitManifestsOrder(manifestsKeys))
-
-			manifestNameRegex := regexp.MustCompile("# Source: [^/]+/(.+)")
-			var manifestsToRender []string
-			for _, f := range showFiles {
-				missing := true
-				// Use linux-style filepath separators to unify user's input path
-				f = filepath.ToSlash(f)
-				for _, manifestKey := range manifestsKeys {
-					manifest := splitManifests[manifestKey]
-					submatch := manifestNameRegex.FindStringSubmatch(manifest)
-					if len(submatch) == 0 {
-						continue
-					}
-					manifestName := submatch[1]
-					// manifest.Name is rendered using linux-style filepath separators on Windows as
-					// well as macOS/linux.
-					manifestPathSplit := strings.Split(manifestName, "/")
-					// manifest.Path is connected using linux-style filepath separators on Windows as
-					// well as macOS/linux
-					manifestPath := strings.Join(manifestPathSplit, "/")
-
-					// if the filepath provided matches a manifest path in the
-					// chart, render that manifest
-					if matched, _ := filepath.Match(f, manifestPath); !matched {
-						continue
-					}
-					manifestsToRender = append(manifestsToRender, manifest)
-					missing = false
-				}
-				if missing {
-					klog.Errorf("could not find template %s in chart", f)
-					return //
-				}
-			}
-			for _, m := range manifestsToRender {
-				fmt.Fprintf(out, "---\n%s\n", m)
-			}
-		} else {
-			fmt.Fprintf(out, "%s", manifests.String())
 		}
 	}
+
+	vals, err := opts.Values.MergeValues(chrt.Chart)
+	if err != nil {
+		return "", nil, err
+	}
+	chrt.Chart.Values = map[string]interface{}{}
+
+	rel, err := client.Run(chrt.Chart, vals)
+	if err != nil {
+		return "", nil, err
+	}
+
+	var manifests bytes.Buffer
+	_, _ = fmt.Fprintln(&manifests, strings.TrimSpace(rel.Manifest))
+	if !opts.DisableHooks {
+		for _, m := range rel.Hooks {
+			if skipTests && isTestHook(m) {
+				continue
+			}
+			_, _ = fmt.Fprintf(&manifests, "---\n# Source: %s\n%s\n", m.Path, m.Manifest)
+		}
+	}
+
+	files := map[string]string{}
+
+	// This is necessary to ensure consistent manifest ordering when using --show-only
+	// with globs or directory names.
+	splitManifests := releaseutil.SplitManifests(manifests.String())
+	manifestNameRegex := regexp.MustCompile("# Source: [^/]+/(.+)")
+	for _, manifest := range splitManifests {
+		submatch := manifestNameRegex.FindStringSubmatch(manifest)
+		if len(submatch) == 0 {
+			continue
+		}
+		manifestName := submatch[1]
+		// manifest.Name is rendered using linux-style filepath separators on Windows as
+		// well as macOS/linux.
+		manifestPathSplit := strings.Split(manifestName, "/")
+		// manifest.Path is connected using linux-style filepath separators on Windows as
+		// well as macOS/linux
+		manifestPath := strings.Join(manifestPathSplit, "/")
+
+		files[manifestPath] = manifest
+	}
+
+	return manifests.String(), files, nil
 }
 
 // checkIfInstallable validates if a chart can be installed

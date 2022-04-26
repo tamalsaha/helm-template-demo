@@ -6,7 +6,6 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/pflag v1.0.5
 	helm.sh/helm/v3 v3.6.1
-	k8s.io/klog/v2 v2.9.0
 	kubepack.dev/kubepack v0.3.9-0.20220425225403-4b1ca29cd318
 	kubepack.dev/lib-helm v0.3.2-0.20220425222012-4279003342a5
 )
@@ -170,6 +169,7 @@ require (
 	k8s.io/cli-runtime v0.21.1 // indirect
 	k8s.io/client-go v0.21.1 // indirect
 	k8s.io/component-base v0.21.1 // indirect
+	k8s.io/klog/v2 v2.9.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20210421082810-95288971da7e // indirect
 	k8s.io/kubectl v0.21.1 // indirect
 	k8s.io/utils v0.0.0-20210802155522-efc7438f0176 // indirect
