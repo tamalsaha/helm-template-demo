@@ -155,13 +155,14 @@ func main() {
 		IncludeCRDs:  false, //
 		SkipCRDs:     true,  //
 	}
+	fmt.Println(opts)
 
 	i, err := action.NewRenderer()
 	if err != nil {
 		klog.Fatal(err)
 	}
 	_, files, err := i.WithRegistry(lib.DefaultRegistry).
-		WithOptions(opts).
+		ForChart(url, name, version).
 		Run()
 	if err != nil {
 		klog.Fatal(err)

@@ -8,7 +8,7 @@ require (
 	helm.sh/helm/v3 v3.6.1
 	k8s.io/klog/v2 v2.9.0
 	kubepack.dev/kubepack v0.3.9-0.20220425225403-4b1ca29cd318
-	kubepack.dev/lib-helm v0.3.2-0.20220426060258-e4262fae9d59
+	kubepack.dev/lib-helm v0.3.2-0.20220426062150-3c0a3b34a215
 )
 
 require (
